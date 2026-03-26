@@ -2,11 +2,11 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 st.set_page_config(page_title="주식 비교 분석 앱", layout="wide")
 
-st.title("📈 한국 vs 미국 주식 비교 분석")
+st.title("📈 한국 vs 미국 주식 비교 분석 (Plotly 버전)")
 
 # 기본 종목 리스트
 korea_stocks = {
@@ -52,14 +52,20 @@ data = load_data(selected_tickers, period)
 # 수익률 계산
 returns = (data / data.iloc[0] - 1) * 100
 
-# 차트
-st.subheader("📊 주가 비교 차트")
-fig, ax = plt.subplots()
-returns.plot(ax=ax)
-ax.set_ylabel("수익률 (%)")
-ax.set_xlabel("날짜")
-ax.legend(loc="upper left")
-st.pyplot(fig)
+# Plotly 차트
+st.subheader("📊 주가 수익률 비교 차트")
+fig = go.Figure()
+
+for col in returns.columns:
+    fig.add_trace(go.Scatter(x=returns.index, y=returns[col], mode='lines', name=col))
+
+fig.update_layout(
+    xaxis_title="날짜",
+    yaxis_title="수익률 (%)",
+    hovermode="x unified"
+)
+
+st.plotly_chart(fig, use_container_width=True)
 
 # 테이블
 st.subheader("📋 수익률 요약")
@@ -80,20 +86,26 @@ st.write(f"- PER: {info.get('trailingPE', 'N/A')}")
 
 hist = stock.history(period=period)
 
-fig2, ax2 = plt.subplots()
-hist['Close'].plot(ax=ax2)
-ax2.set_title(f"{selected_detail} 가격 차트")
-st.pyplot(fig2)
+# 개별 종목 Plotly 차트
+fig2 = go.Figure()
+fig2.add_trace(go.Scatter(x=hist.index, y=hist['Close'], mode='lines', name=selected_detail))
 
-st.success("✅ 데이터는 Yahoo Finance 기반입니다.")
+fig2.update_layout(
+    title=f"{selected_detail} 가격 차트",
+    xaxis_title="날짜",
+    yaxis_title="가격"
+)
+
+st.plotly_chart(fig2, use_container_width=True)
+
+st.success("✅ Plotly 기반이라 Streamlit Cloud에서 안정적으로 동작합니다.")
 
 # requirements.txt
-# 아래 내용을 requirements.txt 파일로 저장하세요
 requirements_txt = """
 streamlit
 yfinance
 pandas
-matplotlib
+plotly
 """
 
 st.download_button("📥 requirements.txt 다운로드", requirements_txt, file_name="requirements.txt")
