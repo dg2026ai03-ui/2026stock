@@ -44,7 +44,25 @@ if len(selected_tickers) == 0:
 # 데이터 다운로드
 @st.cache_data
 def load_data(tickers, period):
-    data = yf.download(tickers, period=period)["Adj Close"]
+    raw = yf.download(tickers, period=period)
+
+    # yfinance 구조 안전 처리
+    if isinstance(raw.columns, pd.MultiIndex):
+        if "Adj Close" in raw.columns.get_level_values(0):
+            data = raw["Adj Close"]
+        elif "Close" in raw.columns.get_level_values(0):
+            data = raw["Close"]
+        else:
+            raise ValueError("가격 데이터 컬럼을 찾을 수 없습니다.")
+    else:
+        # 단일 종목일 경우
+        if "Adj Close" in raw.columns:
+            data = raw[["Adj Close"]]
+        elif "Close" in raw.columns:
+            data = raw[["Close"]]
+        else:
+            raise ValueError("가격 데이터 컬럼을 찾을 수 없습니다.")
+
     return data
 
 data = load_data(selected_tickers, period)
